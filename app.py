@@ -185,7 +185,8 @@ st.markdown("""
 <div class="footer">
     <p><b>Nhóm Thực Hiện:</b>Lại Nguyễn Minh Trí và những người bạnC</p>
     <p>📞 Liên hệ: 0908-083566 | 📧 Email: laingminhtri@gmail.com</p>
-    <p>© 2025 Trường THPT Martie Curie - Dự án Phân Tích Điểm Bất Thường</p>
+    <p>© 2025 Trường THPT Marie Curie - Dự án Phân Tích Điểm Bất Thường</p>
 </div>
 """, unsafe_allow_html=True)
+
 
