@@ -43,7 +43,7 @@ st.markdown("""
 # ==========================
 col_logo, col_title = st.columns([1, 6])
 with col_logo:
-    st.image("logo.png", width=100)  # Bạn cần để file logo.png trong cùng thư mục với app.py
+    st.image("Logo_Marie_Curie.png", width=100)  # Bạn cần để file logo.png trong cùng thư mục với app.py
 with col_title:
     st.title("📊 Phân Tích Điểm Số Bất Thường Sử Dụng Z-Score")
 
@@ -188,3 +188,4 @@ st.markdown("""
     <p>© 2025 Trường THPT Martie Curie - Dự án Phân Tích Điểm Bất Thường</p>
 </div>
 """, unsafe_allow_html=True)
+
