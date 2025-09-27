@@ -1,5 +1,3 @@
-
-
 %%writefile app.py
 import streamlit as st
 import pandas as pd
@@ -8,7 +6,9 @@ from scipy import stats
 import plotly.express as px
 import io
 
+# ==========================
 # Cấu hình trang
+# ==========================
 st.set_page_config(page_title="Phân Tích Điểm Bất Thường", layout="wide", page_icon="📊")
 
 # CSS tùy chỉnh
@@ -21,11 +21,32 @@ st.markdown("""
     h1 { color: #2c3e50; }
     h2 { color: #34495e; }
     .stAlert { border-radius: 5px; }
+    /* Footer fix bottom */
+    footer {
+        visibility: hidden;
+    }
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #2c3e50;
+        color: white;
+        text-align: center;
+        padding: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-st.title("📊 Phân Tích Điểm Số Bất Thường Sử Dụng Z-Score")
+# ==========================
+# Header với logo
+# ==========================
+col_logo, col_title = st.columns([1, 6])
+with col_logo:
+    st.image("logo.png", width=100)  # Bạn cần để file logo.png trong cùng thư mục với app.py
+with col_title:
+    st.title("📊 Phân Tích Điểm Số Bất Thường Sử Dụng Z-Score")
+
 st.markdown("""
 Ứng dụng này phân tích điểm số bất thường của học sinh dựa trên z-score.  
 - **Yêu cầu file CSV**: Có header (ví dụ: "MaHS", "Lop", "Toán", "Lý", "Hóa").  
@@ -33,14 +54,18 @@ st.markdown("""
 - **Hỗ trợ tiếng Việt**: File CSV nên lưu ở định dạng UTF-8.
 """)
 
+# ==========================
 # Sidebar
+# ==========================
 with st.sidebar:
     st.header("🛠 Cài Đặt")
     z_threshold = st.slider("Ngưỡng Z-Score", 1.0, 5.0, 2.0, 0.1, help="Chọn ngưỡng để xác định điểm bất thường")
     st.markdown("---")
     st.info("File CSV cần có cột số cho điểm (ví dụ: Toán, Lý, Hóa) và mã hóa UTF-8.")
 
+# ==========================
 # Upload file
+# ==========================
 uploaded_file = st.file_uploader("📂 Upload bảng điểm (CSV)", type="csv", help="Chọn file CSV chứa bảng điểm")
 
 if uploaded_file is not None:
@@ -153,3 +178,13 @@ if uploaded_file is not None:
 else:
     st.info("Vui lòng upload file CSV (khuyến nghị mã hóa UTF-8) để bắt đầu phân tích.")
 
+# ==========================
+# Footer
+# ==========================
+st.markdown("""
+<div class="footer">
+    <p><b>Nhóm Thực Hiện:</b>Lại Nguyễn Minh Trí và những người bạnC</p>
+    <p>📞 Liên hệ: 0908-083566 | 📧 Email: laingminhtri@gmail.com</p>
+    <p>© 2025 Trường THPT Martie Curie - Dự án Phân Tích Điểm Bất Thường</p>
+</div>
+""", unsafe_allow_html=True)
