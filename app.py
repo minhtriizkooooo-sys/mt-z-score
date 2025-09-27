@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,10 +20,7 @@ st.markdown("""
     h1 { color: #2c3e50; }
     h2 { color: #34495e; }
     .stAlert { border-radius: 5px; }
-    /* Footer fix bottom */
-    footer {
-        visibility: hidden;
-    }
+    footer { visibility: hidden; }
     .footer {
         position: fixed;
         left: 0;
@@ -73,7 +69,6 @@ uploaded_file = st.file_uploader("📂 Upload bảng điểm (CSV)", type="csv",
 
 if uploaded_file is not None:
     try:
-        # Đọc file CSV với UTF-8
         df = pd.read_csv(uploaded_file, encoding='utf-8')
     except UnicodeDecodeError:
         uploaded_file.seek(0)
@@ -83,10 +78,9 @@ if uploaded_file is not None:
         st.error(f"Lỗi khi xử lý file: {str(e)}. Vui lòng kiểm tra định dạng file CSV.")
         st.stop()
 
-    # Layout 2 cột
-    col1, col2 = st.columns([2,1])
+    col1, col2 = st.columns([2, 1])
 
-    # Chọn các cột số
+    # Chọn cột số
     numeric_cols = df.select_dtypes(include=np.number).columns
     if len(numeric_cols) == 0:
         st.error("Không tìm thấy cột số trong file. Vui lòng kiểm tra (các cột điểm phải là số).")
@@ -96,16 +90,15 @@ if uploaded_file is not None:
     df["DiemTB"] = df[numeric_cols].mean(axis=1)
     df["Zscore"] = stats.zscore(df["DiemTB"].fillna(0))
 
-    # Cột hiển thị
     display_cols = ["MaHS", "DiemTB", "Zscore"]
     if 'Lop' in df.columns:
         display_cols.insert(1, "Lop")
 
-   with col1:
+    with col1:
         st.subheader("📋 Bảng điểm trung bình và Z-Score")
         st.dataframe(df[display_cols].style.format({"DiemTB": "{:.2f}", "Zscore": "{:.2f}"}), use_container_width=True)
 
-    # Lọc học sinh bất thường
+    # Học sinh bất thường
     anomalies = df[abs(df["Zscore"]) > z_threshold]
 
     with col1:
@@ -120,7 +113,6 @@ if uploaded_file is not None:
                     axis=1
                 ).format({"DiemTB": "{:.2f}", "Zscore": "{:.2f}"}), use_container_width=True
             )
-            # Xuất CSV
             csv_buffer = io.StringIO()
             anomalies.to_csv(csv_buffer, index=False, encoding='utf-8')
             st.download_button(
@@ -158,7 +150,7 @@ if uploaded_file is not None:
                     ).format({"DiemTB": "{:.2f}", "Zscore": "{:.2f}"}), use_container_width=True
                 )
 
-    # Biểu đồ cột các lớp có học sinh bất thường
+    # Biểu đồ theo lớp
     if 'Lop' in df.columns:
         with col2:
             st.subheader("📈 Biểu Đồ Các Lớp Có Học Sinh Bất Thường")
@@ -189,13 +181,8 @@ else:
 # ==========================
 st.markdown("""
 <div class="footer">
-    <p><b>Nhóm Thực Hiện:</b>Lại Nguyễn Minh Trí và những người bạn</p>
+    <p><b>Nhóm Thực Hiện:</b> Lại Nguyễn Minh Trí và những người bạn</p>
     <p>📞 Liên hệ: 0908-083566 | 📧 Email: laingminhtri@gmail.com</p>
     <p>© 2025 Trường THPT Marie Curie - Dự án Phân Tích Điểm Bất Thường</p>
 </div>
 """, unsafe_allow_html=True)
-
-
-
-
-
