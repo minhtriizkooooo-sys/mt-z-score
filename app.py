@@ -1,4 +1,4 @@
-%%writefile app.py
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -191,6 +191,7 @@ st.markdown("""
     <p>© 2025 Trường THPT Marie Curie - Dự án Phân Tích Điểm Bất Thường</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
