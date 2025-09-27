@@ -11,7 +11,7 @@ import io
 st.set_page_config(page_title="Phân Tích Điểm Bất Thường", layout="wide", page_icon="📊")
 
 # ==========================
-# CSS tùy chỉnh
+# CSS
 # ==========================
 st.markdown("""
 <style>
@@ -37,9 +37,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================
-# Header với logo
+# Header logo
 # ==========================
-col_logo, col_title = st.columns([1, 6])
+col_logo, col_title = st.columns([1,6])
 with col_logo:
     try:
         st.image("Logo_Marie_Curie.png", width=100)
@@ -49,111 +49,102 @@ with col_title:
     st.title("📊 Phân Tích Điểm Số Bất Thường Sử Dụng Z-Score")
 
 st.markdown("""
-Ứng dụng này phân tích điểm số bất thường của học sinh dựa trên z-score.  
-- **Yêu cầu file CSV**: Có header (ví dụ: "MaHS", "Lop", "Toan", "Ly", "Hoa").  
-- **Z-Score**: Điểm bất thường nếu |z-score| > ngưỡng (mặc định 2).  
-- **Hỗ trợ tiếng Việt**: File CSV nên lưu ở định dạng UTF-8.
+Ứng dụng phân tích điểm bất thường dựa trên Z-score.  
+- **Yêu cầu file CSV**: Có header (ví dụ: "MaHS", "Lop", "Toán", "Lý", "Hóa").  
+- **Z-Score**: |z| > ngưỡng => bất thường.  
+- Hỗ trợ UTF-8.
 """)
 
 # ==========================
 # Sidebar
 # ==========================
 with st.sidebar:
-    st.header("🛠 Cài Đặt")
+    st.header("🛠 Cài đặt")
     z_threshold = st.slider("Ngưỡng Z-Score", 1.0, 5.0, 2.0, 0.1)
     st.markdown("---")
-    st.info("File CSV cần có cột số cho điểm (ví dụ: Toan, Ly, Hoa) và mã hóa UTF-8.")
+    st.info("File CSV cần có các cột số và mã hóa UTF-8.")
 
 # ==========================
 # Upload file
 # ==========================
 uploaded_file = st.file_uploader("📂 Upload bảng điểm (CSV)", type="csv")
 
-if uploaded_file is not None:
+if uploaded_file:
     try:
         df = pd.read_csv(uploaded_file, encoding='utf-8')
     except UnicodeDecodeError:
         uploaded_file.seek(0)
         df = pd.read_csv(uploaded_file, encoding='latin1')
-        st.warning("File không phải UTF-8, đã thử mã hóa latin1.")
+        st.warning("File không phải UTF-8, đã thử latin1.")
     except Exception as e:
-        st.error(f"Lỗi khi xử lý file: {str(e)}")
+        st.error(f"Lỗi xử lý file: {e}")
         st.stop()
 
-    # Chuẩn hóa tên cột
-    df.columns = [c.strip() for c in df.columns]
-    df.columns = [c.capitalize() for c in df.columns]
+    # Các cột số
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    if len(numeric_cols)==0:
+        st.error("Không tìm thấy cột số.")
+        st.stop()
 
-    # Chọn các cột điểm
-    subject_cols = [c for c in df.columns if c not in ['MaHS','Lop','Stt']]
+    # Multi môn & multi lớp
+    subjects = st.multiselect("Chọn môn phân tích", numeric_cols, default=numeric_cols)
+    classes = st.multiselect("Chọn lớp để lọc", sorted(df['Lop'].unique()), default=sorted(df['Lop'].unique()))
 
-    # Sidebar multi-select môn + lớp
-    with st.sidebar:
-        selected_subjects = st.multiselect("Chọn môn để phân tích", subject_cols, default=subject_cols)
-        unique_classes = sorted(df['Lop'].unique())
-        selected_classes = st.multiselect("Chọn lớp để hiển thị", unique_classes, default=unique_classes)
+    # Lọc lớp
+    df_filtered = df[df['Lop'].isin(classes)].copy()
 
-    # Filter lớp
-    df_filtered = df[df['Lop'].isin(selected_classes)].copy()
-
-    # Tính Z-score từng môn
-    for subj in selected_subjects:
+    # Tính Z-score từng môn & highlight
+    for subj in subjects:
         df_filtered[f'Z_{subj}'] = stats.zscore(df_filtered[subj].fillna(0))
-        df_filtered[f'Highlight_{subj}'] = np.where(abs(df_filtered[f'Z_{subj}']) >= z_threshold,
-                                                    'Extremely Abnormal', 'Normal')
-        # Size scatter (absolute Z)
-        df_filtered[f'Size_{subj}'] = np.abs(df_filtered[f'Z_{subj}'])*5 + 5
+        df_filtered[f'Highlight_{subj}'] = np.where(df_filtered[f'Z_{subj}'].abs()>z_threshold,'Extremely Abnormal','Normal')
+        df_filtered[f'Size_{subj}'] = df_filtered[f'Z_{subj}'].abs() * 10 + 5
 
     # ==========================
-    # Hiển thị tổng số học sinh bất thường
+    # Bảng tổng hợp
     # ==========================
-    st.subheader("📊 Thống kê học sinh bất thường")
-    anomalies_count = ((df_filtered[[f'Z_{s}' for s in selected_subjects]].abs() > z_threshold).any(axis=1)).sum()
-    st.markdown(f"- Tổng số học sinh trong lớp đã chọn: **{len(df_filtered)}**")
-    st.markdown(f"- Số học sinh bất thường: **{anomalies_count}**")
+    st.subheader("📋 Bảng học sinh gốc")
+    st.dataframe(df_filtered, use_container_width=True)
+    csv_buffer = io.StringIO()
+    df_filtered.to_csv(csv_buffer, index=False, encoding='utf-8')
+    st.download_button("📥 Xuất CSV học sinh gốc", csv_buffer.getvalue(), "Original_Students.csv")
+
+    # Bảng học sinh bất thường
+    anomaly_mask = np.zeros(len(df_filtered),dtype=bool)
+    for subj in subjects:
+        anomaly_mask |= df_filtered[f'Z_{subj}'].abs()>z_threshold
+    anomalies = df_filtered[anomaly_mask]
+
+    st.subheader(f"⚠️ Học sinh bất thường (|Z| > {z_threshold})")
+    st.dataframe(anomalies, use_container_width=True)
+    csv_buffer2 = io.StringIO()
+    anomalies.to_csv(csv_buffer2,index=False,encoding='utf-8')
+    st.download_button("📥 Xuất CSV học sinh bất thường", csv_buffer2.getvalue(), "Anomalies_Students.csv")
 
     # ==========================
-    # Hiển thị 2 bảng dữ liệu
+    # Biểu đồ cột theo lớp
     # ==========================
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📋 Bảng học sinh gốc")
-        st.dataframe(df_filtered, use_container_width=True)
-        csv_buffer = io.StringIO()
-        df_filtered.to_csv(csv_buffer, index=False, encoding='utf-8')
-        st.download_button("📥 Xuất CSV học sinh gốc", data=csv_buffer.getvalue(),
-                           file_name="Students_All.csv", mime="text/csv")
+    st.subheader("📈 Biểu đồ cột: Tổng học sinh vs Học sinh bất thường theo lớp")
+    total_per_class = df_filtered.groupby('Lop').size().reset_index(name='Tổng học sinh')
+    anomalies_per_class = anomalies.groupby('Lop').size().reset_index(name='Số bất thường')
+    class_summary = pd.merge(total_per_class, anomalies_per_class, on='Lop', how='left')
+    class_summary['Số bất thường'] = class_summary['Số bất thường'].fillna(0)
 
-    with col2:
-        st.subheader("⚠️ Học sinh bất thường")
-        anomalies_df = df_filtered[(df_filtered[[f'Z_{s}' for s in selected_subjects]].abs() > z_threshold).any(axis=1)]
-        st.dataframe(anomalies_df, use_container_width=True)
-        csv_buffer2 = io.StringIO()
-        anomalies_df.to_csv(csv_buffer2, index=False, encoding='utf-8')
-        st.download_button("📥 Xuất CSV học sinh bất thường", data=csv_buffer2.getvalue(),
-                           file_name="Students_Anomalies.csv", mime="text/csv")
-
-    # ==========================
-    # Biểu đồ cột: tổng học sinh & học sinh bất thường
-    # ==========================
-    st.subheader("📈 Biểu đồ cột: tổng học sinh vs học sinh bất thường theo lớp")
-    summary_total = df_filtered.groupby('Lop').size().reset_index(name='Tổng học sinh')
-    summary_anom = anomalies_df.groupby('Lop').size().reset_index(name='Học sinh bất thường')
-    summary = pd.merge(summary_total, summary_anom, on='Lop', how='left')
-    summary['Học sinh bất thường'] = summary['Học sinh bất thường'].fillna(0)
-
-    fig_bar = px.bar(summary, x='Lop', y=['Tổng học sinh', 'Học sinh bất thường'],
-                     barmode='group',
-                     color_discrete_map={'Tổng học sinh':'#4CAF50', 'Học sinh bất thường':'#FF5252'},
-                     title="Số học sinh và học sinh bất thường theo lớp")
-    st.plotly_chart(fig_bar, use_container_width=True)
+    fig_bar = px.bar(
+        class_summary,
+        x='Lop',
+        y=['Tổng học sinh','Số bất thường'],
+        barmode='group',
+        color_discrete_map={'Tổng học sinh':'#4CAF50','Số bất thường':'#FF5252'},
+        title="Tổng số học sinh và số học sinh bất thường theo lớp"
+    )
+    fig_bar.update_layout(xaxis_tickangle=-45, legend_title_text='')
+    st.plotly_chart(fig_bar,use_container_width=True)
 
     # ==========================
-    # Scatter + Histogram theo từng môn
+    # Scatter + histogram
     # ==========================
-    st.subheader("📊 Scatter & Histogram theo môn")
-    for subj in selected_subjects:
-        st.markdown(f"### Môn: {subj}")
+    for subj in subjects:
+        st.subheader(f"🔹 Scatter & Histogram: {subj}")
 
         # Scatter
         fig_scat = px.scatter(
@@ -164,16 +155,23 @@ if uploaded_file is not None:
             size=f'Size_{subj}',
             color_discrete_map={'Normal':'lightblue','Extremely Abnormal':'red'},
             title=f"Scatter {subj} (Z-score gradient + highlight cực bất thường)",
-            hover_data={'MaHS':True, subj:True, f'Z_{subj}':True, 'Lop':df_filtered['Lop']}
+            hover_data=['MaHS', subj, f'Z_{subj}', 'Lop']
         )
-        st.plotly_chart(fig_scat, use_container_width=True)
+        st.plotly_chart(fig_scat,use_container_width=True)
 
         # Histogram
-        fig_hist = px.histogram(df_filtered, x=f'Z_{subj}', nbins=20,
-                                color=f'Highlight_{subj}',
-                                color_discrete_map={'Normal':'lightblue','Extremely Abnormal':'red'},
-                                title=f"Histogram Z-score {subj}")
-        st.plotly_chart(fig_hist, use_container_width=True)
+        fig_hist = px.histogram(
+            df_filtered,
+            x=subj,
+            nbins=20,
+            color=f'Highlight_{subj}',
+            color_discrete_map={'Normal':'lightblue','Extremely Abnormal':'red'},
+            title=f"Histogram {subj} phân bố điểm & bất thường"
+        )
+        st.plotly_chart(fig_hist,use_container_width=True)
+
+else:
+    st.info("Vui lòng upload file CSV để bắt đầu phân tích.")
 
 # ==========================
 # Footer
