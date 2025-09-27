@@ -1,6 +1,4 @@
-!pip install pyngrok -q
 
-!pip install streamlit pandas numpy scipy pyngrok plotly -q
 
 %%writefile app.py
 import streamlit as st
@@ -154,3 +152,4 @@ if uploaded_file is not None:
             st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Vui lòng upload file CSV (khuyến nghị mã hóa UTF-8) để bắt đầu phân tích.")
+
