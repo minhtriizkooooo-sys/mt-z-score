@@ -101,7 +101,7 @@ if uploaded_file is not None:
     if 'Lop' in df.columns:
         display_cols.insert(1, "Lop")
 
-    with col1:
+   with col1:
         st.subheader("📋 Bảng điểm trung bình và Z-Score")
         st.dataframe(df[display_cols].style.format({"DiemTB": "{:.2f}", "Zscore": "{:.2f}"}), use_container_width=True)
 
@@ -116,7 +116,7 @@ if uploaded_file is not None:
             st.subheader("Danh sách học sinh bất thường")
             st.dataframe(
                 anomalies[display_cols].style.apply(
-                    lambda row: ['background-color: #ffeb3b' if abs(row["Zscore"]) > z_threshold else '' for _ in row],
+                    lambda row: ['background-color: #34495e' if abs(row["Zscore"]) > z_threshold else '' for _ in row],
                     axis=1
                 ).format({"DiemTB": "{:.2f}", "Zscore": "{:.2f}"}), use_container_width=True
             )
@@ -153,31 +153,34 @@ if uploaded_file is not None:
                 st.subheader("Danh sách học sinh bất thường trong lớp")
                 st.dataframe(
                     filtered_anomalies[display_cols].style.apply(
-                        lambda row: ['background-color: #ffeb3b' if abs(row["Zscore"]) > z_threshold else '' for _ in row],
+                        lambda row: ['background-color: #00A86B' if abs(row["Zscore"]) > z_threshold else '' for _ in row],
                         axis=1
                     ).format({"DiemTB": "{:.2f}", "Zscore": "{:.2f}"}), use_container_width=True
                 )
 
     # Biểu đồ cột các lớp có học sinh bất thường
-    if 'Lop' in df.columns and not anomalies.empty:
+    if 'Lop' in df.columns:
         with col2:
             st.subheader("📈 Biểu Đồ Các Lớp Có Học Sinh Bất Thường")
-            anomalies_per_class = anomalies.groupby('Lop').size().reset_index(name='Số bất thường')
-            total_per_class = df[df['Lop'].isin(anomalies_per_class['Lop'])]\
-                              .groupby('Lop').size().reset_index(name='Tổng học sinh')
-            class_summary = pd.merge(total_per_class, anomalies_per_class, on='Lop', how='left')
+            if anomalies.empty:
+                st.warning("Không có học sinh bất thường để hiển thị biểu đồ.")
+            else:
+                anomalies_per_class = anomalies.groupby('Lop').size().reset_index(name='Số bất thường')
+                total_per_class = df.groupby('Lop').size().reset_index(name='Tổng học sinh')
+                class_summary = pd.merge(total_per_class, anomalies_per_class, on='Lop', how='left')
+                class_summary['Số bất thường'] = class_summary['Số bất thường'].fillna(0)
 
-            fig = px.bar(
-                class_summary,
-                x='Lop',
-                y=['Tổng học sinh', 'Số bất thường'],
-                barmode='group',
-                title="Số học sinh bất thường và tổng số theo lớp",
-                labels={'value': 'Số học sinh', 'Lop': 'Lớp'},
-                color_discrete_map={'Tổng học sinh': '#4CAF50', 'Số bất thường': '#FF5252'}
-            )
-            fig.update_layout(xaxis_tickangle=-45, legend_title_text='')
-            st.plotly_chart(fig, use_container_width=True)
+                fig = px.bar(
+                    class_summary,
+                    x='Lop',
+                    y=['Tổng học sinh', 'Số bất thường'],
+                    barmode='group',
+                    title="Số học sinh bất thường và tổng số theo lớp",
+                    labels={'value': 'Số học sinh', 'Lop': 'Lớp'},
+                    color_discrete_map={'Tổng học sinh': '#4CAF50', 'Số bất thường': '#FF5252'}
+                )
+                fig.update_layout(xaxis_tickangle=-45, legend_title_text='')
+                st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Vui lòng upload file CSV (khuyến nghị mã hóa UTF-8) để bắt đầu phân tích.")
 
@@ -191,6 +194,7 @@ st.markdown("""
     <p>© 2025 Trường THPT Marie Curie - Dự án Phân Tích Điểm Bất Thường</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
