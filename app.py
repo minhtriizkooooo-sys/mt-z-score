@@ -43,7 +43,10 @@ st.markdown("""
 # ==========================
 col_logo, col_title = st.columns([1, 6])
 with col_logo:
-    st.image("Logo_Marie_Curie.png", width=100)  # Bạn cần để file logo.png trong cùng thư mục với app.py
+    try:
+        st.image("Logo_Marie_Curie.png", width=100)
+    except:
+        st.write("🏫 THPT Marie Curie")
 with col_title:
     st.title("📊 Phân Tích Điểm Số Bất Thường Sử Dụng Z-Score")
 
@@ -183,10 +186,11 @@ else:
 # ==========================
 st.markdown("""
 <div class="footer">
-    <p><b>Nhóm Thực Hiện:</b>Lại Nguyễn Minh Trí và những người bạnC</p>
+    <p><b>Nhóm Thực Hiện:</b>Lại Nguyễn Minh Trí và những người bạn</p>
     <p>📞 Liên hệ: 0908-083566 | 📧 Email: laingminhtri@gmail.com</p>
     <p>© 2025 Trường THPT Marie Curie - Dự án Phân Tích Điểm Bất Thường</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
