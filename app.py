@@ -75,6 +75,18 @@ if uploaded_file is not None:
         df = pd.read_csv(uploaded_file, encoding='latin1')
         st.warning("File không phải UTF-8, đã dùng latin1.")
 
+    # Xóa cột 'Unnamed: 0' nếu tồn tại
+    if 'Unnamed: 0' in df.columns:
+        df = df.drop(columns='Unnamed: 0')
+
+    # Kiểm tra và xóa cột đầu tiên nếu nó giống như cột index (số liên tiếp)
+    if len(df) > 1 and len(df.columns) > 1:
+        first_col = df.columns[0]
+        if pd.api.types.is_numeric_dtype(df[first_col]):
+            sorted_values = df[first_col].sort_values().values
+            if all(sorted_values[i+1] - sorted_values[i] == 1 for i in range(len(sorted_values)-1)):
+                df = df.drop(columns=first_col)
+
     # Chuẩn hóa tên cột
     df.columns = df.columns.str.strip().str.replace(' ','').str.capitalize()
 
@@ -83,20 +95,26 @@ if uploaded_file is not None:
     if not class_col:
         st.error("Không tìm thấy cột 'Lop'.")
         st.stop()
-    df['Lop'] = df[class_col[0]]
+    else:
+        df.rename(columns={class_col[0]: 'Lop'}, inplace=True)
 
     # Kiểm tra cột học sinh
     student_col = [c for c in df.columns if c.lower() in ['mahs','id','studentid']]
     if not student_col:
         st.error("Không tìm thấy cột 'MaHS'.")
         st.stop()
-    df['MaHS'] = df[student_col[0]]
+    else:
+        df.rename(columns={student_col[0]: 'MaHS'}, inplace=True)
 
-    # Chọn các cột môn học
-    subject_cols = [c for c in df.columns if c not in ['MaHS','Lop']]
+    # Chọn các cột môn học (loại trừ 'MaHS' và 'Lop')
+    subject_cols = [c for c in df.columns if c not in ['MaHS', 'Lop']]
+
     if len(subject_cols)==0:
         st.error("Không tìm thấy cột điểm môn học.")
         st.stop()
+
+    # Chuyển các cột môn học sang số, bỏ giá trị không hợp lệ
+    df[subject_cols] = df[subject_cols].apply(pd.to_numeric, errors='coerce')
 
     # Multi chọn lớp + môn
     classes = st.multiselect("Chọn lớp để lọc", sorted(df['Lop'].unique()), default=sorted(df['Lop'].unique()))
